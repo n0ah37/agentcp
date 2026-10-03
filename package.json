@@ -1,0 +1,143 @@
+{
+  "name": "agentcp",
+  "version": "1.0.0",
+  "description": "See every file Claude Code and Codex read, in the order they read them, checked against their own documentation. A Mac app.",
+  "license": "MIT",
+  "author": {
+    "name": "Noah General Group Inc.",
+    "url": "https://noahgeneralgroup.com"
+  },
+  "homepage": "https://agentcp.noahgeneralgroup.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n0ah37/agentcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/n0ah37/agentcp/issues"
+  },
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:engine": "tsx watch --clear-screen=false engine/main.ts",
+    "dev:app": "vite",
+    "docs": "tsx scripts/fetch-docs.ts",
+    "build": "vite build && node scripts/build-engine.mjs && node scripts/build-desktop.mjs && node scripts/licenses.mjs",
+    "start": "node dist/engine/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "app": "pnpm build && electron .",
+    "package": "pnpm build && electron-builder --mac --dir && node scripts/sign-local.mjs",
+    "capture": "node scripts/capture.mjs"
+  },
+  "packageManager": "pnpm@10.33.2",
+  "devDependencies": {
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/lang-json": "^6.0.2",
+    "@codemirror/lang-markdown": "^6.5.2",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/lint": "^6.9.7",
+    "@codemirror/search": "^6.7.2",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.13",
+    "@eslint/js": "^10.0.1",
+    "@lezer/highlight": "^1.2.5",
+    "@types/node": "^26.6.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "diff": "^9.0.0",
+    "electron": "44.4.5",
+    "electron-builder": "26.17.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
+    "marked": "^18.0.14",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "smol-toml": "1.9.0",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.70.1",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.2",
+    "yaml": "^2.9.1"
+  },
+  "main": "dist/desktop/main.mjs",
+  "build": {
+    "appId": "inc.noahgeneralgroup.agentcp",
+    "productName": "AgentCP",
+    "copyright": "© 2026 Noah General Group Inc.",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**",
+      "!dist/**/*.map",
+      "LICENSE",
+      "package.json",
+      "!node_modules/**"
+    ],
+    "extraResources": [
+      {
+        "from": "vendor/docs",
+        "to": "docs"
+      }
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "dist/desktop/transcripts-worker.mjs"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "icon": "build/icon.icns",
+      "target": [
+        "dir"
+      ],
+      "darkModeSupport": true,
+      "minimumSystemVersion": "13.0",
+      "extendInfo": {
+        "NSDocumentsFolderUsageDescription": "AgentCP looks in Documents for your code projects when you ask it to.",
+        "NSDesktopFolderUsageDescription": "AgentCP looks on the Desktop for your code projects when you ask it to.",
+        "NSDownloadsFolderUsageDescription": "AgentCP looks in Downloads for your code projects when you ask it to.",
+        "NSRemovableVolumesUsageDescription": "AgentCP reads projects on external drives you add.",
+        "NSNetworkVolumesUsageDescription": "AgentCP reads projects on network drives you add."
+      }
+    },
+    "dmg": {
+      "title": "AgentCP",
+      "contents": [
+        {
+          "x": 150,
+          "y": 190
+        },
+        {
+          "x": 390,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ],
+      "window": {
+        "width": 540,
+        "height": 380
+      },
+      "artifactName": "AgentCP.dmg"
+    },
+    "buildVersion": "5",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "n0ah37",
+        "repo": "agentcp",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
+  }
+}

@@ -1,0 +1,16 @@
+name: An idea
+description: Something AgentCP should show or do.
+labels: [idea]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: What you're trying to do
+      description: The problem first; the feature can come after.
+    validations:
+      required: true
+  - type: textarea
+    id: docs
+    attributes:
+      label: Where the agent's docs describe it
+      description: AgentCP follows each agent's documentation, so a link helps.

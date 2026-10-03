@@ -1,0 +1,6 @@
+# Marks this checkout as its own pnpm root. Without it, a worktree nested under
+# .claude/worktrees/ is treated as part of the main checkout's workspace, and an
+# install there rewrites the main checkout's lockfile (it did, 2026-09-30).
+onlyBuiltDependencies:
+  - electron
+  - esbuild

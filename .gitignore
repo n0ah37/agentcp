@@ -1,0 +1,20 @@
+# dependencies
+/node_modules
+.pnpm-debug.log*
+
+# build output: the bundled UI, engine and desktop main process, and the packaged app
+/dist/
+/release/
+
+# Captured Claude Code documentation: downloaded by `pnpm docs`, by setup, and bundled into builds.
+/vendor/docs/
+
+# local end-to-end fixtures
+/.e2e
+
+# misc
+.DS_Store
+*.pem
+.env*
+*.tsbuildinfo
+/coverage

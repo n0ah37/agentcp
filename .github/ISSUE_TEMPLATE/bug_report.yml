@@ -1,0 +1,35 @@
+name: Something isn't right
+description: AgentCP shows something wrong, misses a file, or doesn't work.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you expected, and what AgentCP did instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to see it
+      description: The steps, and the files involved. Leave out anything private.
+  - type: input
+    id: agentcp
+    attributes:
+      label: AgentCP version
+      description: In AgentCP, About AgentCP.
+      placeholder: "1.0.0 (1)"
+    validations:
+      required: true
+  - type: input
+    id: agents
+    attributes:
+      label: Claude Code and Codex versions
+      description: Also on the About page.
+      placeholder: "Claude Code 2.1.285, Codex 0.155.1"
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+      placeholder: "macOS 26.1"
