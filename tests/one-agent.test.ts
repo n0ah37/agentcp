@@ -120,7 +120,7 @@ describe("a Mac with only OpenCode", () => {
     const { project, get } = await startEngine("opencode");
     const state = await get<{ agents: Agent[] }>("/api/state");
     expect(state.agents.filter((a) => a.on).map((a) => a.id)).toEqual(["opencode"]);
-    expect(state.agents[2]).toMatchObject({ found: true, used: true, version: "1.18.34" });
+    expect(state.agents[2]).toMatchObject({ found: true, used: true, version: "2.0.12" });
     expect(await get<unknown[]>("/api/tips")).toEqual([]);
     const hits = await get<{ kind: string; slug?: string; path?: string; agent?: string }[]>(`/api/search?q=agents&project=${encodeURIComponent(project)}`);
     expect(hits.find((h) => h.kind === "file" && h.path === path.join(project, "AGENTS.md"))?.agent).toBe("opencode");

@@ -167,70 +167,73 @@ export async function captureCodexDocs(outDir: string, opts: { pages?: { url: st
 }
 
 /**
- * OpenCode's documentation (opencode.ai/docs), the same way. It publishes no
- * llms.txt; its sitemap lists every page, in English and in 18 translations,
- * and each page has a Markdown twin at its URL plus `.md` (the MDX source
- * without its frontmatter, so the title comes from the page's og:title). A
- * page is written as opencode/<path>.md with the slug `opencode/<path>`. The
- * config schema the docs point to (opencode.ai/config.json) is kept beside
- * the pages: Settings lists OpenCode's keys from it.
+ * OpenCode's documentation, the same way. OpenCode 2 (GA 2026-09-11) is
+ * documented under opencode.ai/v2/docs; opencode.ai/docs still describes
+ * OpenCode 1, whose config shape 2 reads but no longer writes. The v2 site
+ * publishes no sitemap or llms.txt, so the capture starts at its home page and
+ * follows the links between pages; each page answers in Markdown when asked
+ * for it (Accept: text/markdown), its title on the first line. A page is
+ * written as opencode/<path>.md with the slug `opencode/<path>`.
  */
-export const OPENCODE_DOCS_SOURCE = "https://opencode.ai/docs/sitemap-0.xml";
-export const OPENCODE_SCHEMA_SOURCE = "https://opencode.ai/config.json";
+export const OPENCODE_DOCS_SOURCE = "https://opencode.ai/v2/docs/";
+const OPENCODE_DOCS_BASE = "https://opencode.ai/v2/docs/";
+/** The schema cli.json names ("Add the published JSON Schema"): Settings lists the terminal client's settings from it. */
+export const OPENCODE_CLI_SCHEMA_SOURCE = "https://opencode.ai/v2/cli.json";
 
-/** The translations' first path segment, which the English capture leaves out. */
-const OPENCODE_LOCALES = new Set(["ar", "bs", "da", "de", "es", "fr", "it", "ja", "ko", "nb", "pl", "pt-br", "ru", "th", "tr", "uk", "zh-cn", "zh-tw"]);
-
-/** The English pages a sitemap lists, as their paths under /docs/ ("" for the docs' home page), each once. */
-export function opencodePagesIn(sitemap: string): string[] {
+/** The doc pages a page links to, as their paths under /v2/docs/ ("" for the home page), each once. */
+export function opencodePagesIn(html: string): string[] {
   const seen = new Set<string>();
-  for (const m of sitemap.matchAll(/<loc>\s*https:\/\/opencode\.ai\/docs\/?([^<\s]*)\s*<\/loc>/g)) {
-    const p = m[1].replace(/^\/+|\/+$/g, "");
-    if (OPENCODE_LOCALES.has(p.split("/")[0])) continue;
-    seen.add(p);
-  }
+  for (const m of html.matchAll(/href="\/v2\/docs\/?([^"#?]*)"/g)) seen.add(m[1].replace(/^\/+|\/+$/g, ""));
   return [...seen];
 }
 
 export const opencodeSlugFor = (p: string) => "opencode/" + (p || "index");
 
-/** Drops the MDX `import` and `export const` lines a page's twin keeps; the prose is untouched. */
+/** Drops any MDX `import` and `export const` lines; the prose is untouched. */
 function cleanOpencodePage(md: string): string {
   return md.replace(/^(import\s.+from\s.+|export const .+)\n/gm, "").replace(/^\n+/, "");
 }
 
 export async function captureOpencodeDocs(
   outDir: string,
-  opts: { pages?: { path: string; title: string | null; body: string }[]; schema?: string; today?: string } = {},
+  opts: { pages?: { path: string; title: string | null; body: string }[]; cliSchema?: string; today?: string } = {},
 ): Promise<DocsManifest> {
   let pages = opts.pages;
-  let schema = opts.schema;
+  let cliSchema = opts.cliSchema;
   const headers = { "accept-language": "en" };
   if (!pages) {
-    const res = await fetch(OPENCODE_DOCS_SOURCE, { headers, signal: AbortSignal.timeout(60_000) });
-    if (!res.ok) throw new Error(`opencode.ai answered ${res.status}.`);
-    const paths = opencodePagesIn(await res.text());
-    const queue = [...paths];
+    const order: string[] = [];
+    const seen = new Set<string>([""]);
+    const queue = [""];
     const got: { path: string; title: string | null; body: string }[] = [];
-    await Promise.all(
-      Array.from({ length: 6 }, async () => {
-        for (let p = queue.shift(); p !== undefined; p = queue.shift()) {
-          const md = await fetch(`https://opencode.ai/docs/${p || "index"}.md`, { headers, signal: AbortSignal.timeout(60_000) });
-          if (!md.ok) continue;
-          const html = await fetch(`https://opencode.ai/docs/${p ? p + "/" : ""}`, { headers, signal: AbortSignal.timeout(60_000) }).then((r) => (r.ok ? r.text() : ""), () => "");
-          const title = /<meta property="og:title" content="([^"]+)"/.exec(html)?.[1] ?? null;
-          got.push({ path: p, title, body: await md.text() });
-        }
-      }),
-    );
-    if (got.length < 25 || got.length < paths.length * 0.9) throw new Error(`Only ${got.length} of ${paths.length} OpenCode pages downloaded; the previous copy was kept.`);
-    pages = got.sort((a, b) => paths.indexOf(a.path) - paths.indexOf(b.path));
+    // Breadth first from the home page; six at a time, and never more than 120 pages.
+    while (queue.length && order.length < 120) {
+      const batch = queue.splice(0, 6);
+      await Promise.all(
+        batch.map(async (p) => {
+          const url = OPENCODE_DOCS_BASE + (p ? p + "/" : "");
+          const [md, html] = await Promise.all([
+            fetch(url, { headers: { ...headers, accept: "text/markdown" }, signal: AbortSignal.timeout(60_000) }).then((r) => (r.ok && /markdown/.test(r.headers.get("content-type") ?? "") ? r.text() : ""), () => ""),
+            fetch(url, { headers, signal: AbortSignal.timeout(60_000) }).then((r) => (r.ok ? r.text() : ""), () => ""),
+          ]);
+          order.push(p);
+          for (const next of opencodePagesIn(html)) {
+            if (seen.has(next)) continue;
+            seen.add(next);
+            queue.push(next);
+          }
+          if (md.trim()) got.push({ path: p, title: /^# (.+)$/m.exec(md)?.[1]?.trim() ?? null, body: md });
+        }),
+      );
+    }
+    if (got.length < 25) throw new Error(`Only ${got.length} OpenCode pages downloaded; the previous copy was kept.`);
+    pages = got.sort((a, b) => a.path.localeCompare(b.path));
   }
-  if (schema === undefined) {
-    const r = await fetch(OPENCODE_SCHEMA_SOURCE, { signal: AbortSignal.timeout(60_000) });
-    if (!r.ok) throw new Error(`opencode.ai/config.json answered ${r.status}.`);
-    schema = await r.text();
-    JSON.parse(schema);
+  if (cliSchema === undefined) {
+    const r = await fetch(OPENCODE_CLI_SCHEMA_SOURCE, { signal: AbortSignal.timeout(60_000) });
+    if (!r.ok) throw new Error(`opencode.ai/v2/cli.json answered ${r.status}.`);
+    cliSchema = await r.text();
+    JSON.parse(cliSchema);
   }
 
   const today = opts.today ?? new Date().toLocaleDateString("en-CA");
@@ -248,14 +251,14 @@ export async function captureOpencodeDocs(
     const name = (p.path.split("/").pop() || "Intro").replace(/-/g, " ");
     captured.push({
       slug,
-      title: (p.title ?? name.replace(/^./, (c) => c.toUpperCase())).replace(/ \| OpenCode$/, ""),
-      url: `https://opencode.ai/docs/${p.path ? p.path + "/" : ""}`,
+      title: p.title ?? name.replace(/^./, (c) => c.toUpperCase()),
+      url: OPENCODE_DOCS_BASE + (p.path ? p.path + "/" : ""),
       bytes: Buffer.byteLength(body),
       sha256: createHash("sha256").update(body).digest("hex").slice(0, 16),
       fetchedAt: today,
     });
   }
-  await fs.writeFile(path.join(fresh, "config.schema.json"), schema);
+  await fs.writeFile(path.join(fresh, "cli.schema.json"), cliSchema);
   await fs.rm(final, { recursive: true, force: true });
   await fs.rename(fresh, final);
   const manifest: DocsManifest = { fetchedAt: today, source: OPENCODE_DOCS_SOURCE, count: captured.length, pages: captured };

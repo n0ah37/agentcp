@@ -276,7 +276,7 @@ function buildMenu(on: string[]): void {
             ]
           : []),
         ...(on.includes("codex") ? [{ label: "Codex Documentation", click: () => void shell.openExternal("https://learn.chatgpt.com/docs/configuration") }] : []),
-        ...(on.includes("opencode") ? [{ label: "OpenCode Documentation", click: () => void shell.openExternal("https://opencode.ai/docs/") }] : []),
+        ...(on.includes("opencode") ? [{ label: "OpenCode Documentation", click: () => void shell.openExternal("https://opencode.ai/v2/docs/") }] : []),
       ],
     },
   ];
@@ -319,13 +319,15 @@ function codexItems(alone: boolean): MenuItemConstructorOptions[] {
   ];
 }
 
-/** OpenCode's rows take ⌘1 to ⌘5 when it's the only agent on; otherwise they have no shortcut. */
+/** OpenCode's rows take ⌘1 to ⌘7 when it's the only agent on; otherwise they have no shortcut. */
 function opencodeItems(alone: boolean): MenuItemConstructorOptions[] {
   return (
     [
       ["Instructions", "instructions"],
       ["Agents", "agents"],
+      ["Commands", "commands"],
       ["Skills", "skills"],
+      ["Plugins", "plugins"],
       ["MCP Servers", "mcp"],
       ["Settings", "settings"],
     ] as const

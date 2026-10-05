@@ -33,11 +33,11 @@ export function buildOneAgentHome(home: string, agent: "claude" | "codex" | "ope
     ]);
   } else if (agent === "opencode") {
     // Where OpenCode's install script puts it.
-    write(path.join(home, ".opencode/bin/opencode"), '#!/bin/sh\necho "1.18.34"\n', 0o755);
+    write(path.join(home, ".opencode/bin/opencode"), '#!/bin/sh\necho "2.0.12"\n', 0o755);
     write(path.join(home, ".config/opencode/opencode.json"), '{\n  "$schema": "https://opencode.ai/config.json",\n  "model": "anthropic/claude-sonnet-5-5"\n}\n');
     write(path.join(home, ".config/opencode/AGENTS.md"), "# How I work\n\n- Use pnpm, never npm.\n- Keep commits small.\n");
     write(path.join(project, "AGENTS.md"), "# Shop\n\nA small storefront. Run `pnpm test` before you commit.\n");
-    write(path.join(project, "opencode.json"), '{\n  "$schema": "https://opencode.ai/config.json",\n  // The docs server for this project\n  "mcp": { "docs": { "type": "remote", "url": "https://docs.example.com/mcp" } },\n}\n');
+    write(path.join(project, "opencode.json"), '{\n  "$schema": "https://opencode.ai/config.json",\n  // The docs server for this project\n  "mcp": { "servers": { "docs": { "type": "remote", "url": "https://docs.example.com/mcp" } } },\n}\n');
     write(path.join(project, ".opencode/agents/review.md"), "---\ndescription: Reviews a diff before you commit\nmode: subagent\n---\n\nYou review diffs. Say what's wrong and why, briefly.\n");
     // One session in OpenCode's database, in the layout its 1.2 release moved sessions to.
     const file = path.join(home, ".local/share/opencode/opencode.db");

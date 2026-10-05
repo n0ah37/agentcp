@@ -3,7 +3,7 @@ import path from "node:path";
 
 import type { DocPage, DocRef, DocSearchHit, DocsInfo } from "../../shared/types.ts";
 import { offeredAgents } from "./agents.ts";
-import { captureCodexDocs, captureDocs, captureOpencodeDocs, type CapturedPage, type DocsManifest } from "./docs-fetch.ts";
+import { OPENCODE_DOCS_SOURCE, captureCodexDocs, captureDocs, captureOpencodeDocs, type CapturedPage, type DocsManifest } from "./docs-fetch.ts";
 import { APP_DIR, REPO_ROOT } from "./paths.ts";
 
 /**
@@ -66,6 +66,8 @@ function load(c: Corpus = "claude"): { dir: string; manifest: DocsManifest } {
   let best: { dir: string; manifest: DocsManifest; mtime: number } | null = null;
   for (const dir of candidates()) {
     const r = readManifest(dir, c);
+    // A capture of OpenCode 1's docs (opencode.ai/docs, before 2026-10-05) isn't the one these rules quote.
+    if (r && c === "opencode" && r.manifest.source !== OPENCODE_DOCS_SOURCE) continue;
     if (r && (!best || r.manifest.fetchedAt > best.manifest.fetchedAt)) best = { dir, ...r };
   }
   if (!best) return { dir: "", manifest: EMPTY };
@@ -97,12 +99,12 @@ export function docsInfo(): DocsInfo {
   return { ...info("claude"), codex: { capturedAt: cx.capturedAt, pages: cx.pages, ageDays: cx.ageDays }, opencode: { capturedAt: oc.capturedAt, pages: oc.pages, ageDays: oc.ageDays } };
 }
 
-/** OpenCode's config schema (opencode.ai/config.json), captured beside its pages. */
-export function opencodeSchema(): unknown {
+/** cli.json's schema (opencode.ai/v2/cli.json), captured beside OpenCode's pages. */
+export function opencodeCliSchema(): unknown {
   const { dir } = load("opencode");
   if (!dir) return null;
   try {
-    return JSON.parse(fs.readFileSync(path.join(dir, CORPORA.opencode.folder, "config.schema.json"), "utf8"));
+    return JSON.parse(fs.readFileSync(path.join(dir, CORPORA.opencode.folder, "cli.schema.json"), "utf8"));
   } catch {
     return null;
   }
@@ -167,7 +169,7 @@ function indexPage(dir: string, page: CapturedPage): Indexed | null {
   if (hit) return hit;
   const c = corpusOf(page.slug);
   const file = path.join(dir, CORPORA[c].folder, `${fileOf(page.slug)}.md`);
-  // OpenCode's site (Starlight) ids headings as GitHub does, numbering a repeat: options, options-1.
+  // OpenCode's site ids headings as GitHub does, numbering a repeat: options, options-1.
   const used = new Map<string, number>();
   const anchor =
     c === "claude"
@@ -212,7 +214,7 @@ export function docRef(slug: string, anchor?: string): DocRef {
   const p = find(slug);
   const h = anchor ? p?.headings.find((x) => x.anchor === anchor) : undefined;
   const c = corpusOf(slug);
-  const base = c === "codex" ? (p?.page.url ?? "https://learn.chatgpt.com/docs/" + fileOf(slug)) : c === "opencode" ? (p?.page.url ?? `https://opencode.ai/docs/${fileOf(slug)}/`) : SITE + slug;
+  const base = c === "codex" ? (p?.page.url ?? "https://learn.chatgpt.com/docs/" + fileOf(slug)) : c === "opencode" ? (p?.page.url ?? `https://opencode.ai/v2/docs/${fileOf(slug)}/`) : SITE + slug;
   return {
     slug,
     anchor,

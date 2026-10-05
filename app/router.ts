@@ -5,11 +5,11 @@ import { demoEmbedded } from "./demo.ts";
 // Hash routes, so the same build works from a local server and inside a
 // desktop shell: #/instructions?project=/path&file=/path
 
-export type Screen = "instructions" | "memory" | "sessions" | "usage" | "hooks" | "agents" | "styles" | "skills" | "plugins" | "mcp" | "rules" | "settings" | "history";
+export type Screen = "instructions" | "memory" | "sessions" | "usage" | "hooks" | "agents" | "commands" | "styles" | "skills" | "plugins" | "mcp" | "rules" | "settings" | "history";
 
 export type Route = { screen: Screen; params: URLSearchParams };
 
-const SCREENS: Screen[] = ["instructions", "memory", "sessions", "usage", "hooks", "agents", "styles", "skills", "plugins", "mcp", "rules", "settings", "history"];
+const SCREENS: Screen[] = ["instructions", "memory", "sessions", "usage", "hooks", "agents", "commands", "styles", "skills", "plugins", "mcp", "rules", "settings", "history"];
 
 function parse(): Route {
   const raw = location.hash.replace(/^#\/?/, "");

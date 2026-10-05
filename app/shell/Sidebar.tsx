@@ -13,19 +13,21 @@ type Row = { screen: Screen; label: string; icon: keyof typeof Icon; agents: Age
 
 /**
  * In the View menu's order. The agent picker, under the project picker,
- * chooses whose files the first group shows: Output styles and Plugins are
- * Claude Code's alone, Rules are Codex's; OpenCode has no memory or hooks
- * files, and its agents include the primary ones, so its row says Agents.
- * Sessions and Usage cover every agent that's on, whatever the picker says,
- * so their links don't carry it.
+ * chooses whose files the first group shows: Output styles are Claude Code's
+ * alone, Rules are Codex's, Commands are OpenCode's; OpenCode has no memory or
+ * hooks files, and its agents include the primary ones, so its row says Agents.
+ * Sessions and Usage cover every agent that's on, whatever the picker says;
+ * their links still carry the picked agent, so the picker doesn't change when
+ * you open them.
  */
 export const NAV: Row[] = [
   { screen: "instructions", label: "Instructions", icon: "instructions", agents: ["claude", "codex", "opencode"] },
   { screen: "memory", label: "Memory", icon: "memory", agents: ["claude", "codex"] },
   { screen: "agents", label: "Subagents", icon: "agents", agents: ["claude", "codex", "opencode"], labelFor: { opencode: "Agents" } },
   { screen: "styles", label: "Output styles", icon: "styles", agents: ["claude"] },
+  { screen: "commands", label: "Commands", icon: "run", agents: ["opencode"] },
   { screen: "skills", label: "Skills", icon: "skills", agents: ["claude", "codex", "opencode"] },
-  { screen: "plugins", label: "Plugins", icon: "plugin", agents: ["claude"] },
+  { screen: "plugins", label: "Plugins", icon: "plugin", agents: ["claude", "opencode"] },
   { screen: "mcp", label: "MCP servers", icon: "plug", agents: ["claude", "codex", "opencode"] },
   { screen: "rules", label: "Rules", icon: "shield", agents: ["codex"] },
   { screen: "hooks", label: "Hooks", icon: "hook", agents: ["claude", "codex"] },
@@ -76,7 +78,7 @@ export function Sidebar({ onSearch }: { onSearch: () => void }) {
       {/* One list, no divider between the agent's files and Sessions and Usage (decided 2026-10-01). */}
       <nav className="navgroup" aria-label="Sections">
         {NAV.filter((n) => n.agents.includes(agent) && (n.screen !== "sessions" || prefs?.sessions)).map((n) => (
-          <NavLink key={n.screen} n={n} to={href(n.screen, n.both ? { project: project ?? "" } : keep)} current={route.screen === n.screen} count={n.screen === "instructions" ? count : null} agent={agent} />
+          <NavLink key={n.screen} n={n} to={href(n.screen, keep)} current={route.screen === n.screen} count={n.screen === "instructions" ? count : null} agent={agent} />
         ))}
       </nav>
       <div className="navfoot">

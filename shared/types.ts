@@ -69,7 +69,10 @@ export type FileKind =
   | "opencode-instructions"
   | "opencode-config"
   | "opencode-agent"
-  | "opencode-skill";
+  | "opencode-command"
+  | "opencode-skill"
+  | "opencode-plugin"
+  | "opencode-cli";
 
 export type Loads = "launch" | "on-demand" | "not-read";
 
@@ -149,8 +152,8 @@ export type CodexEntry = {
   id: string;
   file: FileInfo;
   level: string;
-  /** read: in full · cut: partly, the rest is over Codex's budget · dropped: over budget · not-read: another file in the folder wins, or it's empty. */
-  loads: "read" | "cut" | "dropped" | "not-read";
+  /** read: in full · cut: partly, the rest is over Codex's budget · dropped: over budget · not-read: another file in the folder wins, or it's empty · on-demand: OpenCode reads it when it works in that folder. */
+  loads: "read" | "cut" | "dropped" | "not-read" | "on-demand";
   reason: string | null;
   /** How much of it Codex reads. */
   bytesRead: number;
@@ -181,7 +184,7 @@ export type OpencodeLayer = {
   path: string;
   display: string;
   label: string;
-  kind: "user" | "custom" | "project" | "managed";
+  kind: "user" | "project" | "cli";
   exists: boolean;
   /** Why it couldn't be read, such as "isn't valid JSON". */
   broken: string | null;
@@ -196,19 +199,37 @@ export type OpencodeView = {
   /** loads is "read" or "not-read"; OpenCode has no size limit, so nothing is cut. */
   entries: CodexEntry[];
   missing: MissingSlot[];
-  /** instructions entries that are web addresses: OpenCode fetches them; the app only lists them. */
+  /** instructions entries that are web addresses. OpenCode 2 accepts them but doesn't fetch them yet. */
   remote: { url: string; from: string }[];
   layers: OpencodeLayer[];
   rules: DocRule[];
 };
 
-/** OpenCode's settings: every top-level key of opencode.json from its schema, with the value in force and the file that set it. */
+export type OpencodeSettingRow = {
+  key: string;
+  type: string;
+  description: string;
+  options: string[] | null;
+  deprecated: boolean;
+  value: string | null;
+  setIn: string | null;
+  alsoIn: string[];
+  /** Files that set it under OpenCode 1's name for it (provider for providers…), which OpenCode 2 still reads. */
+  legacy: { name: string; file: string }[];
+  doc: DocRef;
+};
+
+/** OpenCode's settings: every key its config page lists, with the value in force and the file that set it; then cli.json's. */
 export type OpencodeSettingsView = {
   project: ProjectRef | null;
   layers: OpencodeLayer[];
-  rows: { key: string; type: string; description: string; options: string[] | null; deprecated: boolean; value: string | null; setIn: string | null; alsoIn: string[] }[];
-  /** Keys a file sets that the schema doesn't have. */
+  rows: OpencodeSettingRow[];
+  /** Keys a file sets that OpenCode's docs don't list. */
   unknown: { key: string; file: string }[];
+  /** Keys OpenCode 2 accepts but ignores or moves elsewhere, and why. */
+  ignored: { key: string; file: string; why: string }[];
+  /** The terminal client's cli.json and its settings, from its schema. */
+  cli: { layer: OpencodeLayer; rows: OpencodeSettingRow[] };
   capturedAt: string | null;
   doc: DocRef;
   rules: DocRule[];
@@ -395,7 +416,8 @@ export type Definition = {
 
 export type DefinitionsView = {
   project: ProjectRef | null;
-  kind: "agent" | "style" | "skill";
+  /** command and plugin are OpenCode's. */
+  kind: "agent" | "style" | "skill" | "command" | "plugin";
   items: Definition[];
   /** Output styles only: the style in force and the file that chose it. */
   active?: { name: string; setIn: string | null };

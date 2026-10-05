@@ -6,7 +6,7 @@ import type { AgentCommand, AppState, Fix, Preferences, SearchHit, SettingScope 
 import { agentStatus, enabledAgents, sessionSources } from "./lib/agents.ts";
 import { codexAgents, codexMemories, codexRules, codexSettings, codexSkills, codexView, planCodexSettings, sharePlan } from "./lib/codex.ts";
 import { aiPrompt } from "./lib/prompt.ts";
-import { opencodeAgents, opencodeMcp, opencodeSettings, opencodeSkills, opencodeView } from "./lib/opencode.ts";
+import { opencodeAgents, opencodeCommands, opencodeMcp, opencodePlugins, opencodeSettings, opencodeSkills, opencodeView } from "./lib/opencode.ts";
 import { AGENT_NAMES, isAgentId } from "../shared/agents.ts";
 import { definitionsView, pairSkills } from "./lib/definitions.ts";
 import { docsInfo, page, searchDocs, updateDocs } from "./lib/docs.ts";
@@ -255,11 +255,12 @@ export const routes: Record<string, Handler> = {
   },
 
   "GET /api/definitions": async ({ url }) => {
-    const kind = need(str(url, "kind"), "kind") as "agent" | "style" | "skill";
-    if (!["agent", "style", "skill"].includes(kind)) throw new HttpError(400, "Unknown kind.");
+    const kind = need(str(url, "kind"), "kind") as "agent" | "style" | "skill" | "command" | "plugin";
+    if (!["agent", "style", "skill", "command", "plugin"].includes(kind)) throw new HttpError(400, "Unknown kind.");
+    if ((kind === "command" || kind === "plugin") && str(url, "agent") !== "opencode") throw new HttpError(400, "Commands and plugins are listed for OpenCode here.");
     const ref = await project(str(url, "project"));
-    if ((kind === "agent" || kind === "skill") && str(url, "agent") === "opencode") {
-      const oc = kind === "agent" ? await opencodeAgents(ref) : await opencodeSkills(ref);
+    if (kind !== "style" && str(url, "agent") === "opencode") {
+      const oc = kind === "agent" ? await opencodeAgents(ref) : kind === "command" ? await opencodeCommands(ref) : kind === "plugin" ? await opencodePlugins(ref) : await opencodeSkills(ref);
       for (const l of oc.locations) watchFile(path.join(l.path, "_"));
       return { project: ref, kind, ...oc };
     }
@@ -274,7 +275,8 @@ export const routes: Record<string, Handler> = {
       await pairSkills(codex.items, (await definitionsView("skill", ref)).items, "claude");
       return { project: ref, kind, ...codex };
     }
-    const view = await definitionsView(kind, ref);
+    // Commands and plugins were OpenCode's, above; what's left is Claude Code's or Codex's.
+    const view = await definitionsView(kind as "agent" | "style" | "skill", ref);
     for (const l of view.locations) watchFile(path.join(l.path, "_"));
     if (kind === "skill") await pairSkills(view.items, (await codexSkills(ref)).items, "codex");
     return view;

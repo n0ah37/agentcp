@@ -15,19 +15,23 @@ import { FileWorkspace } from "../shell/FileWorkspace.tsx";
 import { setHeadSlot } from "../shell/headslot.ts";
 import { SCOPE } from "../ui/scopes.ts";
 
-type Kind = "agent" | "style" | "skill";
+type Kind = "agent" | "style" | "skill" | "command" | "plugin";
 
 /** What each kind is, for the screen with none yet; `{agent}` is Claude Code or Codex. */
 const ABOUT: Record<Kind, string> = {
   agent: "A subagent is a helper {agent} can hand a task to, with its own instructions and tools.",
   style: "",
   skill: "A skill is a folder of instructions and files {agent} loads when a task calls for it.",
+  command: "A command is a saved prompt you run as /name in {agent}.",
+  plugin: "A plugin is code {agent} loads when it starts: tools, hooks and integrations. Add one under plugins in opencode.json, or put its file in a plugins folder.",
 };
 
 const COPY: Record<Kind, { title: string; one: string; many: string; newLabel: string }> = {
   agent: { title: "Subagents", one: "subagent", many: "subagents", newLabel: "New subagent" },
   style: { title: "Output styles", one: "style", many: "styles", newLabel: "New style" },
   skill: { title: "Skills", one: "skill", many: "skills", newLabel: "New skill" },
+  command: { title: "Commands", one: "command", many: "commands", newLabel: "New command" },
+  plugin: { title: "Plugins", one: "plugin", many: "plugins", newLabel: "" },
 };
 
 function template(kind: Kind, name: string, description: string): string {
@@ -41,6 +45,12 @@ function template(kind: Kind, name: string, description: string): string {
 function opencodeAgentTemplate(name: string, description: string): string {
   const d = description.replace(/\n/g, " ").trim() || "Describe when OpenCode should use this agent.";
   return `---\ndescription: ${d}\nmode: subagent\n---\n\nYou are ${name}. Describe the job, what to return, and what not to do.\n`;
+}
+
+/** An OpenCode command: Markdown whose body is the prompt; $ARGUMENTS is what follows the command. */
+function opencodeCommandTemplate(name: string, description: string): string {
+  const d = description.replace(/\n/g, " ").trim() || `What /${name} does`;
+  return `---\ndescription: ${d}\n---\n\nDescribe what to do with $ARGUMENTS.\n`;
 }
 
 function codexAgentTemplate(name: string, description: string): string {
@@ -74,9 +84,9 @@ export function Definitions({ kind }: { kind: Kind }) {
   const [params, setParams] = useParams();
   const [creating, setCreating] = useState(false);
   const [filter, setFilter] = useState("");
-  // Skills and agents are the kinds Codex and OpenCode have too; the screen lists the sidebar's agent's.
+  // Skills and agents are the kinds Codex and OpenCode have too, commands and these plugins OpenCode's alone; the screen lists the sidebar's agent's.
   const agent = useAgent();
-  const alt = (kind === "skill" || kind === "agent") && agent !== "claude" ? agent : null;
+  const alt = kind !== "style" && agent !== "claude" ? agent : null;
   const codex = alt === "codex";
   const altName = alt === "opencode" ? "OpenCode" : "Codex";
   const { data: view, error } = useResource<DefinitionsView>(`/api/definitions${qs({ kind, project, agent: alt })}`);
@@ -100,7 +110,10 @@ export function Definitions({ kind }: { kind: Kind }) {
   if (!view) return <p className="loading">Reading {c.many}…</p>;
 
   const selectedPath = params.get("file") ?? view.items.find((i) => i.source !== "builtin")?.file.path ?? view.items[0]?.file.path ?? null;
-  const selected = view.items.find((i) => i.file.path === selectedPath) ?? null;
+  // Several of OpenCode's can live in one opencode.json, so the name picks among them.
+  const selectedName = params.get("name");
+  const selected = view.items.find((i) => i.file.path === selectedPath && (!selectedName || i.name === selectedName)) ?? view.items.find((i) => i.file.path === selectedPath) ?? null;
+  const isSelected = (d: Definition) => d === selected;
 
   const useStyle = async (name: string, scope: "user" | "project" | "local") => {
     try {
@@ -119,7 +132,7 @@ export function Definitions({ kind }: { kind: Kind }) {
         </div>
         <div className="head-file" ref={setHeadSlot} />
         <div className="head-actions">
-          <Button small onClick={() => setCreating(true)}><Icon.plus />{c.newLabel}</Button>
+          {kind !== "plugin" && <Button small onClick={() => setCreating(true)}><Icon.plus />{c.newLabel}</Button>}
         </div>
       </header>
       <div className="body three">
@@ -144,11 +157,11 @@ export function Definitions({ kind }: { kind: Kind }) {
             const open = !bundle || !!filter || items.some((d) => d.file.path === selectedPath);
             const rows = items.map((d) => (
                 <button
-                  key={d.file.path}
+                  key={`${d.file.path}#${d.name}`}
                   type="button"
-                  className={`item ${d.active === false && alt ? "dim" : ""}`}
-                  aria-selected={selectedPath === d.file.path}
-                  onClick={() => setParams({ file: d.file.path })}
+                  className={`item ${(d.active === false || d.shadowedBy) && alt ? "dim" : ""}`}
+                  aria-selected={isSelected(d)}
+                  onClick={() => setParams({ file: d.file.path, name: d.name })}
                   onContextMenu={(e) => {
                     if (d.source === "builtin") return;
                     e.preventDefault();
@@ -159,7 +172,7 @@ export function Definitions({ kind }: { kind: Kind }) {
                   <span className="dot" style={{ ["--c" as string]: (alt ? false : d.active) ? "var(--sage)" : d.source === "plugin" || d.source === "builtin" ? "var(--faint)" : "var(--ink-2)" }} />
                   <span className="t">{d.name}</span>
                   <span className="m">
-                    {alt && d.active === false ? <span className="tag">Off</span> : !alt && d.active ? <span className="tag on">In use</span> : d.shadowedBy ? <span className="tag" title="A custom agent by this name replaces it">Replaced</span> : <Tally counts={d.counts} />}
+                    {alt && d.active === false ? <span className="tag">Off</span> : !alt && d.active ? <span className="tag on">In use</span> : d.shadowedBy ? <span className="tag" title={alt ? `${d.shadowedBy} wins` : "A custom agent by this name replaces it"}>{alt && d.source !== "builtin" ? "Overridden" : "Replaced"}</span> : <Tally counts={d.counts} />}
                   </span>
                   <span className="s">{d.description || d.file.name}</span>
                 </button>
@@ -198,14 +211,14 @@ export function Definitions({ kind }: { kind: Kind }) {
             canDelete={selected?.source === "user" || selected?.source === "project"}
             onDeleted={() => setParams({ file: null })}
             agent={alt ?? undefined}
-            formattable={kind === "skill"}
+            formattable={kind === "skill" || kind === "command"}
             facts={selected ? [["From", selected.source === "plugin" ? `${selected.where} plugin` : selected.where]] : []}
             top={kind === "style" && selected ? <StyleUse d={selected} onUse={useStyle} canProject={!!project} /> : selected?.twin ? <Twin twin={selected.twin} name={selected.name} /> : undefined}
             bottom={alt ? undefined : <Fields kind={kind} path={selectedPath} />}
           />
         ) : (
           <section className="pane center">
-            <Empty title={`No ${c.many} yet.`} action={<Button kind="primary" onClick={() => setCreating(true)}><Icon.plus />{c.newLabel}</Button>}>
+            <Empty title={`No ${c.many} yet.`} action={kind === "plugin" ? undefined : <Button kind="primary" onClick={() => setCreating(true)}><Icon.plus />{c.newLabel}</Button>}>
               {ABOUT[kind].replace("{agent}", alt ? altName : "Claude Code") || undefined}
             </Empty>
           </section>
@@ -226,10 +239,12 @@ export function Definitions({ kind }: { kind: Kind }) {
                 ? codexAgentTemplate(name, description)
                 : alt === "opencode" && kind === "agent"
                   ? opencodeAgentTemplate(name, description)
-                  : alt
+                  : kind === "command"
+                    ? opencodeCommandTemplate(name, description)
+                    : alt
                     ? template(kind, name, description).replace(/Claude/g, altName)
                     : template(kind, name, description);
-            save({ path: p, content, baseHash: null, project, onSaved: () => setParams({ file: p }) });
+            save({ path: p, content, baseHash: null, project, onSaved: () => setParams({ file: p, name: null }) });
           }}
         />
       )}
@@ -341,12 +356,12 @@ function CreateSheet(props: { kind: Kind; agentName: string; locations: Definiti
       <div className="prefs">
         <div className="prefrow" style={{ display: "grid", gap: 6 }}>
           <b>Name</b>
-          <input className="field" data-autofocus value={name} onChange={(e) => setName(e.target.value)} placeholder={props.kind === "agent" ? "code-reviewer" : props.kind === "style" ? "Terse" : "release-notes"} />
+          <input className="field" data-autofocus value={name} onChange={(e) => setName(e.target.value)} placeholder={props.kind === "agent" ? "code-reviewer" : props.kind === "style" ? "Terse" : props.kind === "command" ? "review" : "release-notes"} />
         </div>
         <div className="prefrow" style={{ display: "grid", gap: 6 }}>
-          <b>When should {props.agentName} use it?</b>
+          <b>{props.kind === "command" ? "What does it do?" : `When should ${props.agentName} use it?`}</b>
           <textarea className="field" rows={3} value={desc} onChange={(e) => setDesc(e.target.value)} style={{ fontFamily: "var(--sans)", fontSize: 13 }} />
-          <p>{props.kind === "style" ? "Shown in the style picker." : `${props.agentName} reads this to decide. Put the main use first.`}</p>
+          <p>{props.kind === "style" ? "Shown in the style picker." : props.kind === "command" ? "Shown in the command list." : `${props.agentName} reads this to decide. Put the main use first.`}</p>
         </div>
         <div className="prefrow" style={{ display: "grid", gap: 6 }}>
           <b>Where</b>

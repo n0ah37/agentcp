@@ -72,7 +72,7 @@ export function Mcp() {
             {codex
               ? "From your config.toml and a trusted project's .codex/config.toml."
               : oc
-                ? "From mcp in your opencode.json and this project's, merged in OpenCode's order."
+                ? "From mcp.servers in your opencode.json and this project's, in OpenCode's order."
                 : "From ~/.claude.json, this project's .mcp.json and your plugins. Connectors added on claude.ai come from your account, so they aren't listed."}
           </p>
         </nav>
@@ -113,7 +113,7 @@ export function Mcp() {
               <div className="insp">
                 {oc ? (
                   <section className="manage">
-                    <p className="clear">To change it, edit mcp in <span className="mono">{selected.file}</span>, or run opencode mcp add.</p>
+                    <p className="clear">To change it, edit mcp.servers in <span className="mono">{selected.file}</span>, or run opencode mcp add.</p>
                   </section>
                 ) : (
                   <Manage s={selected} codex={codex} onRun={setPending} />
@@ -131,7 +131,7 @@ export function Mcp() {
                     {codex
                       ? `Codex reads MCP servers from [mcp_servers] in your config.toml and in a trusted project's .codex/config.toml.`
                       : oc
-                        ? "OpenCode merges mcp from its config files; a later file's values win where both set one, and enabled: false turns a server off."
+                        ? "A later config file replaces a server with the same name whole, and disabled: true keeps one from connecting."
                         : "When the same server is set in more than one place, Claude Code uses the first: this project just for you, this project for everyone, you, then plugins."}
                   </p>
                   <DocLink doc={v.doc} onOpen={openDoc} />

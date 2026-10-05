@@ -22,7 +22,8 @@ needs no other app. It runs against the real `~/.claude`, `~/.codex` and your pr
   AGENTS.md chain, config.toml layers and its settings list, skills, agents, rules, memories,
   and sharing with Claude), `codex-docs.ts` (what the app knows about Codex, read from Codex's
   docs), `opencode.ts` and `opencode-docs.ts` (the same for OpenCode: instructions, opencode.json
-  layers and its settings list from the schema, agents, skills, MCP servers), `toml-edit.ts` (line-level writes to config.toml), `hooks.ts` (both agents' hooks),
+  layers, its settings list from the config page and cli.json's from its schema, agents,
+  commands, skills, plugins, MCP servers), `jsonc.ts` (JSON with comments), `toml-edit.ts` (line-level writes to config.toml), `hooks.ts` (both agents' hooks),
   `prompt.ts` (Write with AI's prompt), `tips.ts`, `projects.ts` (the project list), `scan.ts`
   (setup's search for projects), `setup.ts` (first-run checks), `plugins.ts` (Claude Code's
   plugins from every origin: marketplace, synced from claude.ai, skills folders), `mcp.ts`
@@ -96,14 +97,21 @@ needs no other app. It runs against the real `~/.claude`, `~/.codex` and your pr
 - **OpenCode ships after 1.0, together with syncing** (2026-10-03). Its code is on `main`, but
   `offeredAgents()` in `engine/lib/agents.ts` leaves it out of every list unless `ACP_OPENCODE=1`
   (the tests set it; `ACP_OPENCODE=1 pnpm dev` shows it). Releasing it means removing that switch.
-- **OpenCode comes from OpenCode's documentation, the same way.** Its 36 English pages are
-  captured from opencode.ai/docs (the sitemap lists them; each page has a `.md` twin) into
-  `opencode/` with `opencode-manifest.json`, and the config schema it links to
-  (opencode.ai/config.json) beside them as `opencode/config.schema.json`. Every OpenCode rule is
-  an `OC_RULES` entry in `opencode-docs.ts`; `tests/opencode.test.ts` fails when a page stops
-  saying one. Where the docs and OpenCode's source disagree (it stacks every AGENTS.md up to the
-  git root; the docs say the first found wins), the app follows the docs. Its config files are
-  JSONC: read with `parseJsonc`, edited as files; Settings and MCP servers list, they don't write.
+- **OpenCode comes from OpenCode 2's documentation, the same way** (2026-10-05). OpenCode 2 went
+  GA on 2026-09-11 and is documented at opencode.ai/v2/docs; opencode.ai/docs still describes
+  OpenCode 1, and opencode.ai/config.json is still 1's schema. The capture follows the links from
+  the v2 home page and asks for each page as Markdown (`Accept: text/markdown`), into `opencode/`
+  with `opencode-manifest.json`; cli.json's schema (opencode.ai/v2/cli.json) sits beside them as
+  `opencode/cli.schema.json`. A capture of 1's docs is ignored. opencode.json's settings are read
+  off the v2 config page's sections; OpenCode 1's names (provider, agent, permission, mcp.<name>…)
+  come from its "Migrate from V1" page, because 2 still reads them. What 2 does differently: every
+  AGENTS.md from the project up to home is read and none is a CLAUDE.md; `instructions` isn't read
+  yet; config is merged from the farthest folder to the root's nearest, then every .opencode file;
+  MCP servers live in `mcp.servers` and a later file replaces one whole; a skill's ID is its path.
+  Every OpenCode rule is an `OC_RULES` entry in `opencode-docs.ts`; `tests/opencode.test.ts` fails
+  when a page stops saying one. Where the docs and OpenCode's source disagree, the app follows the
+  docs. Its config files are JSONC: read with `parseJsonc`, edited as files; Settings, MCP servers,
+  Commands and Plugins list, they don't write config.
 - **Codex plugins aren't listed**: Codex's docs don't say where it keeps them, and nothing
   about Codex comes from the Codex on this Mac.
 - **Never present a config file as if it were reality.** Show the file that decided a
@@ -140,8 +148,8 @@ build bundles it into the app) and `~/.agentcp/docs/` (setup and Update now).
 The newer capture wins. Heading anchors follow Mintlify's live ids: a dot becomes a dash,
 runs of dashes collapse (`anchorFor` in `docs.ts`). Codex's site ids headings the GitHub way:
 punctuation dropped, dots too (`codexAnchorFor`). Codex slugs start with `codex/`. OpenCode's
-site (Starlight) does the same and numbers a repeated heading (`options`, `options-1`); its slugs
-start with `opencode/`.
+site does the same and numbers a repeated heading (`options`, `options-1`); its slugs start with
+`opencode/`.
 
 ## Commands
 

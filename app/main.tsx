@@ -73,8 +73,10 @@ function Screen() {
       return <Definitions kind="style" />;
     case "skills":
       return <Definitions kind="skill" />;
+    case "commands":
+      return <Definitions kind="command" />;
     case "plugins":
-      return <Plugins />;
+      return agent === "opencode" ? <Definitions kind="plugin" /> : <Plugins />;
     case "mcp":
       return <Mcp />;
     case "settings":
@@ -122,9 +124,10 @@ function App() {
           go("instructions", { project: c.slice(5) });
         }
         else if (c.startsWith("go:")) {
-          // go:<screen>:<agent>; an empty agent is both, for Sessions and Usage.
+          // go:<screen>:<agent>. Sessions and Usage cover every agent, so they come with none and keep the one picked.
           const [, screen, agent = ""] = c.split(":");
-          go(screen as ScreenName, { project, agent: agent === "codex" || agent === "opencode" ? agent : null });
+          const keep = new URLSearchParams(location.hash.split("?")[1] ?? "").get("agent");
+          go(screen as ScreenName, { project, agent: agent ? (agent === "codex" || agent === "opencode" ? agent : null) : keep });
         }
         else if (c === "save") window.dispatchEvent(new Event("acp:save"));
       }),

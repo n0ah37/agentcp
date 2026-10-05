@@ -204,7 +204,7 @@ function Row({ tone = "ok", title, children, right }: { tone?: "ok" | "miss" | "
 const INSTALL: Record<AgentId, { url: string; site: string }> = {
   claude: { url: "https://code.claude.com/docs/en/quickstart", site: "code.claude.com" },
   codex: { url: "https://developers.openai.com/codex/cli", site: "developers.openai.com" },
-  opencode: { url: "https://opencode.ai/docs/", site: "opencode.ai" },
+  opencode: { url: "https://opencode.ai/v2/docs/cli/", site: "opencode.ai" },
 };
 
 /** The agents found here, each with a switch: only the ones installed or used start on. */
