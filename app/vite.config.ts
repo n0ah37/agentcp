@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
@@ -9,7 +10,8 @@ const engine = `http://127.0.0.1:${process.env.ACP_ENGINE_PORT ?? "3101"}`;
 const token = process.env.ACP_TOKEN ?? "";
 
 export default defineConfig({
-  root: "app",
+  // This folder, however Vite is started (`vite app`, as package.json does, or --config).
+  root: fileURLToPath(new URL(".", import.meta.url)),
   plugins: [react()],
   // One bundle is fine for an app loaded from disk over loopback; splitting buys nothing here.
   // Hidden source maps: scripts/licenses.mjs reads them to list the packages built in; they aren't packaged.

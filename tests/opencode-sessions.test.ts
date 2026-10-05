@@ -13,7 +13,7 @@ import { fileSession, fileSessions, forgetTranscripts, usageView } from "../engi
  * out the way OpenCode 1.18 lays it out (packages/core/src/session/sql.ts at
  * v1.18.34), one the way 2.x does (the same file at v2.0.12, and
  * packages/schema/src/session-message.ts for what a row holds). Nothing here
- * reads a real database: vitest.config.ts points HOME and XDG_DATA_HOME at a
+ * reads a real database: tests/vitest.config.ts points HOME and XDG_DATA_HOME at a
  * throwaway folder and clears OPENCODE_DB.
  */
 

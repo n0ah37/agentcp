@@ -1,11 +1,14 @@
 import os from "node:os";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 // Tests run against a throwaway home folder, never the real ~/.claude.
 const home = path.join(os.tmpdir(), `acp-test-home-${process.pid}`);
 
 export default defineConfig({
+  // The repository, not this folder: the paths below start there.
+  root: fileURLToPath(new URL("..", import.meta.url)),
   test: {
     include: ["tests/**/*.test.ts"],
     globalSetup: ["tests/global-setup.ts"],

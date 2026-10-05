@@ -178,7 +178,7 @@ No. AgentCP is an independent app by Noah General Group Inc. Claude Code is made
 
 ## Contributing
 
-Bug reports and pull requests are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first, and report security problems privately as [SECURITY.md](SECURITY.md) describes.
+Bug reports and pull requests are welcome. Read [CONTRIBUTING.md](.github/CONTRIBUTING.md) first, and report security problems privately as [SECURITY.md](.github/SECURITY.md) describes.
 
 ## License
 

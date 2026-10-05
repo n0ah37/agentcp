@@ -20,13 +20,13 @@
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:engine": "tsx watch --clear-screen=false engine/main.ts",
-    "dev:app": "vite",
+    "dev:app": "vite app",
     "docs": "tsx scripts/fetch-docs.ts",
-    "build": "vite build && node scripts/build-engine.mjs && node scripts/build-desktop.mjs && node scripts/licenses.mjs",
+    "build": "vite build app && node scripts/build-engine.mjs && node scripts/build-desktop.mjs && node scripts/licenses.mjs",
     "start": "node dist/engine/main.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
-    "test": "vitest run",
+    "test": "vitest run --config tests/vitest.config.ts",
     "app": "pnpm build && electron .",
     "package": "pnpm build && electron-builder --mac --dir && node scripts/sign-local.mjs",
     "capture": "node scripts/capture.mjs"

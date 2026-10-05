@@ -26,4 +26,4 @@ pnpm typecheck && pnpm lint
 
 Keep a pull request to one change, say why in its description, and include a test when you change what the engine reads or writes. For anything large, open an issue first so we can agree on the shape.
 
-By contributing, you agree that your contribution is released under the [MIT License](LICENSE).
+By contributing, you agree that your contribution is released under the [MIT License](../LICENSE).

@@ -17,7 +17,7 @@ const env = {
 
 const children = [
   spawn("pnpm", ["exec", "tsx", "watch", "--clear-screen=false", "engine/main.ts"], { env, stdio: "inherit" }),
-  spawn("pnpm", ["exec", "vite"], { env, stdio: "inherit" }),
+  spawn("pnpm", ["exec", "vite", "app"], { env, stdio: "inherit" }),
 ];
 
 const stop = () => {
